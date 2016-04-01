@@ -1392,6 +1392,41 @@ describe User do
       @user.tables.count.should == initial_count
     end
 
+    it "should recreates the link of a table that is dropped and then recreated, although the check for changed tables doesn't realize about it" do
+      Carto::UserTable.where(user_id: @user.id, name: 'ghost_table').first.should be_nil
+
+      @user.in_database.run('create table ghost_table (cartodb_id integer, the_geom geometry, the_geom_webmercator geometry, updated_at date, created_at date)')
+      @user.in_database.run(%Q{
+        CREATE OR REPLACE FUNCTION test_quota_per_row()
+          RETURNS trigger
+          AS $$
+          BEGIN
+            RETURN NULL;
+          END;
+          $$
+          LANGUAGE plpgsql;
+      })
+      @user.in_database.run( %Q{
+        CREATE TRIGGER test_quota_per_row BEFORE INSERT ON ghost_table EXECUTE PROCEDURE test_quota_per_row()
+      })
+
+      # This is the check that is currently used at the visualizations controller
+      @user.search_for_modified_table_names.should eq true
+
+      @user.link_ghost_tables
+      first_table = Carto::UserTable.where(user_id: @user.id, name: 'ghost_table').first
+      first_table.should_not be_nil
+
+      @user.in_database.run('drop table ghost_table')
+      @user.in_database.run('create table ghost_table (cartodb_id integer, the_geom geometry, the_geom_webmercator geometry, updated_at date, created_at date)')
+      @user.search_for_modified_table_names.should eq false
+
+      @user.link_ghost_tables
+      second_table = Carto::UserTable.where(user_id: @user.id, name: 'ghost_table').first
+      second_table.should be_nil
+    end
+
+
   end
 
   describe '#shared_tables' do
