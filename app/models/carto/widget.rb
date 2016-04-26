@@ -15,6 +15,15 @@ class Carto::Widget < ActiveRecord::Base
     visualization.nil? ? [] : visualization.widgets.flatten
   end
 
+  def self.visualization_analysis_widgets(visualization_id)
+    visualization = Carto::Visualization.where(id: visualization_id).first
+    visualization.nil? ? [] : visualization.analysis_widgets
+  end
+
+  def self.layer_widgets(layer_id)
+    Carto::Widget.where(layer_id: layer_id).where(source_id: nil).all
+  end
+
   # INFO: disable ActiveRecord inheritance column
   self.inheritance_column = :_type
 
