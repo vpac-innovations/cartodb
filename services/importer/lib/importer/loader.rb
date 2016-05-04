@@ -252,7 +252,7 @@ module CartoDB
 
         #In case there are not an specific error we try to fix it
         if ogr2ogr.generic_error? && ogr2ogr.exit_code == 0
-          retried_ogr2ogr = try_fallback(append_mode)
+          try_fallback(append_mode)
         end
 
         @job.source_file_rows = get_source_file_rows
@@ -260,14 +260,9 @@ module CartoDB
 
         # too verbose in append mode
         unless append_mode
-          job.log "ogr2ogr call:      #{ogr2ogr.command}", truncate = false
-          job.log "ogr2ogr output:    #{ogr2ogr.command_output}"
-          job.log "ogr2ogr exit code: #{ogr2ogr.exit_code}"
-          if retried_ogr2ogr
-            job.log "retry ogr2ogr call:      #{ogr2ogr.command}", truncate = false
-            job.log "retry ogr2ogr output:    #{ogr2ogr.command_output}"
-            job.log "retry ogr2ogr exit code: #{ogr2ogr.exit_code}"
-          end
+          job.log "ogr2ogr call:            #{ogr2ogr.command}", truncate = false
+          job.log "ogr2ogr output:          #{ogr2ogr.command_output}"
+          job.log "ogr2ogr exit code:       #{ogr2ogr.exit_code}"
         end
 
         check_for_import_errors
@@ -295,7 +290,6 @@ module CartoDB
           ogr2ogr.run(append_mode)
         end
         ogr2ogr.set_default_properties
-        ogr2ogr
       end
 
       def check_for_import_errors
